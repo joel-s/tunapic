@@ -1,4 +1,6 @@
 import { useRef, useEffect } from 'react'
+import {useRecoilState, useRecoilValue} from "recoil";
+import {playingState} from "./canvas.ts";
 
 function getRGBA(x: number, y: number, width: number, height: number, q: number) : number[] {
     const deg = Math.PI / 180;
@@ -37,31 +39,30 @@ const draw = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, frameCou
         for (let x = 0; x < canvas.width; x += 1) {
             const i = (y * canvas.width + x) * 4;
             [data[i], data[i+1], data[i+2], data[i+3]] = getRGBA(x, y, canvas.width, canvas.height, .5 + .5 * Math.cos(frameCount*0.01));
-//            data[i] = 255 - data[i]; // red
-//            data[i + 1] = 255 - data[i + 1]; // green
-//            data[i + 2] = 255 - data[i + 2]; // blue
         }
     }
     ctx.putImageData(imageData, 0, 0);
 }
 
 const Canvas = () => {
+    const playing = useRecoilValue(playingState);
+    let frameCount = 0;
 
-    const canvasRef = useRef(null);
+    const canvasRef = useRef(null as HTMLCanvasElement | null);
 
     useEffect(() => {
-        const canvas = canvasRef.current as HTMLCanvasElement | null;
+        const canvas = canvasRef.current;
         if (canvas != null) {
             const context = canvas.getContext('2d');
             if (context != null) {
-                let frameCount = 0;
                 let animationFrameId = 0;
 
-                //Our draw came here
                 const render = () => {
-                    frameCount++;
                     draw(canvas, context, frameCount);
-                    animationFrameId = window.requestAnimationFrame(render);
+                    if (playing) {
+                        frameCount++;
+                        animationFrameId = window.requestAnimationFrame(render);
+                    }
                 }
                 render()
 
@@ -70,7 +71,7 @@ const Canvas = () => {
                 }
             }
         }
-    }, []);
+    });
 
     return <canvas ref={canvasRef} height={1024} width={1024} style={{height: 512, width: 512}}/>;
 }
